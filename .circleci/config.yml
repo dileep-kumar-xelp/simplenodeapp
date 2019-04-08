@@ -27,7 +27,7 @@ jobs:
       - image: google/cloud-sdk
     environment:
       PROJECT_NAME: "simplenodeapp"
-      GOOGLE_PROJECT_ID: "simplenodeapp-237006"
+      GOOGLE_PROJECT_ID: "samplenodeapp-237006"
       GOOGLE_COMPUTE_ZONE: "us-central1-a"
       GOOGLE_CLUSTER_NAME: "standard-cluster-1"
     steps:
