@@ -1,57 +1,70 @@
 version: 2
 jobs:
-  build_and_test:
+  build:
+    working_directory: ~/agebold-api
     docker:
-      - image: circleci/node:10
-    working_directory: ~/repo
+      - image: circleci/node:9
+      - image: mysql:5.7.24
     steps:
       - checkout
       - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "package.json" }}
-            - v1-dependencies-
+          key: dependency-cache-{{ checksum "package.json" }}
       - run:
-          name: Install dependencies
+          name: Installing Dependencies
           command: npm install
       - save_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
           paths:
-            - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
-      - run:
-          name: Run tests
-          command: npm test
-      - store_test_results:
-          path: test-results
-  deploy_to_staging:
+            - ./node_modules
+      # - run:
+      #     name: Linter Testing
+      #     command: npm run-script lint
+      # - run:
+      #     name: Testing
+      #     command: npm run-script test
+  deploy:
     docker:
-      - image: google/cloud-sdk
+      - image: circleci/python:3.6.1
     environment:
-      PROJECT_NAME: "simplenodeapp"
-      GOOGLE_PROJECT_ID: "samplenodeapp-237006"
-      GOOGLE_COMPUTE_ZONE: "us-central1-a"
-      GOOGLE_CLUSTER_NAME: "standard-cluster-1"
+      AWS_DEFAULT_OUTPUT: json
     steps:
       - checkout
-      - run:
-          name: Setup Google Cloud SDK
-          command: |
-            apt-get install -qq -y gettext
-            echo $GCLOUD_SERVICE_KEY > ${HOME}/gcloud-service-key.json
-            gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
-            gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
-            gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
-            gcloud --quiet container clusters get-credentials ${GOOGLE_CLUSTER_NAME}
       - setup_remote_docker
+      - attach_workspace:
+          at: workspace
+      - restore_cache:
+          key: v1-{{ checksum "requirements.txt" }}
+      - run:
+          name: Install kubectl from binary
+          command: |
+            sudo apt-get install -qq -y gettext
+            sudo curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.14.0/bin/linux/amd64/kubectl
+            sudo chmod +x ./kubectl
+            sudo mv ./kubectl /usr/local/bin/kubectl
+      - run:
+          name: Install awscli
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install --upgrade pip
+            pip install awscli
+      - run:
+          name: Setup aws environment variables
+          command: |
+            echo 'export ECR_REPOSITORY_NAME="${AWS_RESOURCE_NAME_PREFIX}"' >> $BASH_ENV
+            echo 'export ECS_CLUSTER_NAME="${AWS_RESOURCE_NAME_PREFIX}-cluster"' >> $BASH_ENV
+            echo 'export ECS_SERVICE_NAME="${AWS_RESOURCE_NAME_PREFIX}-service"' >> $BASH_ENV
       - run:
           name: Docker build and push
           command: |
-            docker build \
-              --build-arg COMMIT_REF=${CIRCLE_SHA1} \
-              --build-arg BUILD_DATE=`date -u +”%Y-%m-%dT%H:%M:%SZ”` \
-              -t ${PROJECT_NAME} .
-            docker tag ${PROJECT_NAME} eu.gcr.io/${GOOGLE_PROJECT_ID}/${PROJECT_NAME}:${CIRCLE_SHA1}
-            gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://eu.gcr.io
-            docker push eu.gcr.io/${GOOGLE_PROJECT_ID}/${PROJECT_NAME}:${CIRCLE_SHA1}
+            # docker build -t ${FULL_IMAGE_NAME}/$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY_NAME:$CIRCLE_SHA1 .
+             docker build -t ${FULL_IMAGE_NAME} .
+             . venv/bin/activate
+             eval $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+            # docker tag ${FULL_IMAGE_NAME} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:${CIRCLE_SHA1}
+            # docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/agebold-api:$CIRCLE_SHA1
+             docker tag agebold-backend 691031375631.dkr.ecr.ap-south-1.amazonaws.com/agebold-api:latest
+             docker push 691031375631.dkr.ecr.ap-south-1.amazonaws.com/agebold-api:latest
       - run:
           name: Deploy to Kubernetes
           command: |
@@ -60,12 +73,12 @@ jobs:
             kubectl rollout status deployment/${PROJECT_NAME}
 workflows:
   version: 2
-  build_test_deploy:
+  build-and-deploy:
     jobs:
-      - build_and_test
-      - deploy_to_staging:
+      - build
+      - deploy:
           requires:
-            - build_and_test
+            - build
           filters:
             branches:
               only: master
