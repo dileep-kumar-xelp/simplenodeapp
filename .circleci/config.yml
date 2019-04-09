@@ -16,12 +16,12 @@ jobs:
           key: dependency-cache-{{ checksum "package.json" }}
           paths:
             - ./node_modules
-      - run:
-          name: Linter Testing
-          command: npm run-script lint
-      - run:
-          name: Testing
-          command: npm run-script test
+      # - run:
+      #     name: Linter Testing
+      #     command: npm run-script lint
+      # - run:
+      #     name: Testing
+      #     command: npm run-script test
   deploy:
     docker:
       - image: circleci/python:3.6.1
