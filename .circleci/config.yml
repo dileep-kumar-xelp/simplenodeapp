@@ -63,8 +63,8 @@ jobs:
              eval $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
             # docker tag ${FULL_IMAGE_NAME} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:${CIRCLE_SHA1}
             # docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/agebold-api:$CIRCLE_SHA1
-             docker tag agebold-backend 691031375631.dkr.ecr.ap-south-1.amazonaws.com/agebold-api:latest
-             docker push 691031375631.dkr.ecr.ap-south-1.amazonaws.com/agebold-api:latest
+             docker tag samplenoderepo 157666243736.dkr.ecr.ap-south-1.amazonaws.com/samplenoderepo:latest
+             docker push 157666243736.dkr.ecr.ap-south-1.amazonaws.com/samplenoderepo:latest
       - run:
           name: Deploy to Kubernetes
           command: |
