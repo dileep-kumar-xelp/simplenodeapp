@@ -85,21 +85,21 @@ jobs:
             done
             #push image for first run, or update existing.
             source /tmp/docker_image
-            echo "Deploying IMage: ${DOCKER_IMAGE}"
-            if kubectl describe deployment/circleci-k8s-demo ;then
+            echo "Deploying IMage: ${FULL_IMAGE_NAME}"
+            if kubectl describe deployment/k8s ;then
               echo "Updating image on existing deployment" 
-              kubectl set image deployment/circleci-k8s-demo circleci-k8s-demo=${DOCKER_IMAGE}
+              kubectl set image deployment/k8s k8s=${FULL_IMAGE_NAME}
             else
               echo "running first deployment"
-              kubectl run circleci-k8s-demo --image=${DOCKER_IMAGE} --port 3000
+              kubectl run k8s--image=${FULL_IMAGE_NAME} --port 3000
             fi
             # block until deployment is running
-            kubectl rollout status deployment/circleci-k8s-demo
-            if kubectl get service circleci-k8s-demo ;then
+            kubectl rollout status deployment/k8s
+            if kubectl get service k8s ;then
               echo "Service is exposed"
             else
               echo "Exposing deployment on Load Balancer"
-              kubectl expose deployment circleci-k8s-demo --type=LoadBalancer --port 80 --target-port 3000
+              kubectl expose deployment k8s--type=LoadBalancer --port 80 --target-port 3000
             fi
       # - run:
       #     name: Install awscli
