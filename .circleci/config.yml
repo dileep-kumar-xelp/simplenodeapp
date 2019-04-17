@@ -42,6 +42,7 @@ jobs:
             . venv/bin/activate
             pip install --upgrade pip
             pip install awscli
+            kubectl version
       - run:
           name: Setup aws environment variables
           command: |
