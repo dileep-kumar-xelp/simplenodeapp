@@ -35,6 +35,9 @@ jobs:
             sudo curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.14.0/bin/linux/amd64/kubectl
             sudo chmod +x ./kubectl
             sudo mv ./kubectl /usr/local/bin/kubectl
+            mkdir -p $HOME/.kube
+            sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+            sudo chown $(id -u):$(id -g) $HOME/.kube/config
       - run:
           name: Install awscli
           command: |
