@@ -35,9 +35,12 @@ jobs:
             sudo curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.14.0/bin/linux/amd64/kubectl
             sudo chmod +x ./kubectl
             sudo mv ./kubectl /usr/local/bin/kubectl
-            mkdir -p $HOME/.kube
-            sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-            sudo chown $(id -u):$(id -g) $HOME/.kube/config
+            kubectl cluster-info
+            kubectl version
+
+            # mkdir -p $HOME/.kube
+            # sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+            # sudo chown $(id -u):$(id -g) $HOME/.kube/config
       - run:
           name: Install awscli
           command: |
@@ -45,7 +48,7 @@ jobs:
             . venv/bin/activate
             pip install --upgrade pip
             pip install awscli
-            kubectl version
+
       - run:
           name: Setup aws environment variables
           command: |
