@@ -28,109 +28,43 @@ jobs:
           at: workspace
       - restore_cache:
           key: v1-{{ checksum "requirements.txt" }}
-      # - run:
-      #     name: Install kubectl from binary
-      #     command: |
-      #       sudo apt-get install -qq -y gettext
-      #       sudo curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.14.0/bin/linux/amd64/kubectl
-      #       sudo chmod +x ./kubectl
-      #       sudo mv ./kubectl /usr/local/bin/kubectl
       - run:
-          name: Install kops
+          name: Install kubectl from binary
           command: |
-            wget -O kops https://github.com/kubernetes/kops/releases/download/$(curl -s https://api.github.com/repos/kubernetes/kops/releases/latest | grep tag_name | cut -d '"' -f 4)/kops-linux-amd64
-            chmod +x ./kops
-            sudo mv ./kops /usr/local/bin/kops
-            echo "export KOPS_CLUSTER_NAME=${K8S_DOMAIN_AWS}" >> $BASH_ENV
-            echo "export KOPS_STATE_STORE=s3://${S3_BUCKET_NAME}" >> $BASH_ENV
-      - run:
-          name: Install kubectl
-          command: |
-            wget -O kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
-            chmod +x ./kubectl
+            sudo apt-get install -qq -y gettext
+            sudo curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.14.0/bin/linux/amd64/kubectl
+            sudo chmod +x ./kubectl
             sudo mv ./kubectl /usr/local/bin/kubectl
       - run:
-          name: Install aws cli
+          name: Install awscli
           command: |
-            sudo pip install awscli
-            echo "export AWS_REGION=ap-south-1" >> $BASH_ENV
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install --upgrade pip
+            pip install awscli
       - run:
-          name: Create CLuster
+          name: Setup aws environment variables
           command: |
-            if kops get cluster --name ${KOPS_CLUSTER_NAME} ; then
-              echo "Cluster exists, loading configuration into kubectl"
-              kops export kubecfg --name ${KOPS_CLUSTER_NAME}
-            else
-              echo "Creating cluster" 
-              echo "${KOPS_PUBLIC_KEY}" > ~/.ssh/kops_id.pub
-              kops create cluster \
-                  --node-count=2 \
-                  --node-size=t2.micro \
-                  --zones=ap-south-1 \
-                  --name=${KOPS_CLUSTER_NAME}
-              kops create secret --name ${KOPS_CLUSTER_NAME} sshpublickey admin -i ~/.ssh/kops_id.pub
-              kops update cluster --name ${KOPS_CLUSTER_NAME} --yes
-            fi
-            attempts=0
-            until kops validate cluster ; do
-              # wait up to 10 minutes for helthy cluster
-              if [ $attempts -lt 10 ];then
-                echo "Cluster not ready"
-                sleep 30
-                let attempts=attempts+1
-              else
-                echo "Attempts failed"
-                #exit 1
-              fi
-            done
-            #push image for first run, or update existing.
-            source /tmp/docker_image
-            echo "Deploying IMage: ${FULL_IMAGE_NAME}"
-            if kubectl describe deployment/k8s ;then
-              echo "Updating image on existing deployment" 
-              kubectl set image deployment/k8s k8s=${FULL_IMAGE_NAME}
-            else
-              echo "running first deployment"
-              kubectl run k8s--image=${FULL_IMAGE_NAME} --port 3000
-            fi
-            # block until deployment is running
-            kubectl rollout status deployment/k8s
-            if kubectl get service k8s ;then
-              echo "Service is exposed"
-            else
-              echo "Exposing deployment on Load Balancer"
-              kubectl expose deployment k8s--type=LoadBalancer --port 80 --target-port 3000
-            fi
-      # - run:
-      #     name: Install awscli
-      #     command: |
-      #       python3 -m venv venv
-      #       . venv/bin/activate
-      #       pip install --upgrade pip
-      #       pip install awscli
-      # - run:
-      #     name: Setup aws environment variables
-      #     command: |
-      #       echo 'export ECR_REPOSITORY_NAME="${AWS_RESOURCE_NAME_PREFIX}"' >> $BASH_ENV
-      #       echo 'export ECS_CLUSTER_NAME="${AWS_RESOURCE_NAME_PREFIX}-cluster"' >> $BASH_ENV
-      #       echo 'export ECS_SERVICE_NAME="${AWS_RESOURCE_NAME_PREFIX}-service"' >> $BASH_ENV
-      # - run:
-      #     name: Docker build and push
-      #     command: |
-      #       # docker build -t ${FULL_IMAGE_NAME}/$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY_NAME:$CIRCLE_SHA1 .
-      #        docker build -t ${FULL_IMAGE_NAME} .
-      #        . venv/bin/activate
-      #        eval $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
-      #       # docker tag ${FULL_IMAGE_NAME} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:${CIRCLE_SHA1}
-      #       # docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/agebold-api:$CIRCLE_SHA1
-      #        docker tag samplenoderepo 157666243736.dkr.ecr.ap-south-1.amazonaws.com/samplenoderepo:latest
-      #        docker push 157666243736.dkr.ecr.ap-south-1.amazonaws.com/samplenoderepo:latest
-      # - run:
-      #     name: Deploy to Kubernetes
-      #     command: |
-      #       envsubst < ${HOME}/project/k8s.yml > ${HOME}/patched_k8s.yml
-      #       kubectl apply -f ${HOME}/patched_k8s.yml
-      #       kubectl rollout status deployment/${PROJECT_NAME}
+            echo 'export ECR_REPOSITORY_NAME="${AWS_RESOURCE_NAME_PREFIX}"' >> $BASH_ENV
+            echo 'export ECS_CLUSTER_NAME="${AWS_RESOURCE_NAME_PREFIX}-cluster"' >> $BASH_ENV
+            echo 'export ECS_SERVICE_NAME="${AWS_RESOURCE_NAME_PREFIX}-service"' >> $BASH_ENV
+      - run:
+          name: Docker build and push
+          command: |
+            # docker build -t ${FULL_IMAGE_NAME}/$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY_NAME:$CIRCLE_SHA1 .
+             docker build -t ${FULL_IMAGE_NAME} .
+             . venv/bin/activate
+             eval $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+            # docker tag ${FULL_IMAGE_NAME} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:${CIRCLE_SHA1}
+            # docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/agebold-api:$CIRCLE_SHA1
+             docker tag samplenoderepo 157666243736.dkr.ecr.ap-south-1.amazonaws.com/samplenoderepo:latest
+             docker push 157666243736.dkr.ecr.ap-south-1.amazonaws.com/samplenoderepo:latest
+      - run:
+          name: Deploy to Kubernetes
+          command: |
+            # envsubst < ${HOME}/project/k8s.yml > ${HOME}/patched_k8s.yml
+            kubectl apply -f k8s.yml
+            kubectl rollout status deployment/${PROJECT_NAME}
 workflows:
   version: 2
   build-and-deploy:
