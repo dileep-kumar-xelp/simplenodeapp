@@ -35,12 +35,22 @@ jobs:
             sudo curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.14.0/bin/linux/amd64/kubectl
             sudo chmod +x ./kubectl
             sudo mv ./kubectl /usr/local/bin/kubectl
-            kubectl cluster-info
-            kubectl version
+            # kubectl cluster-info
+            # kubectl version
 
             # mkdir -p $HOME/.kube
             # sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
             # sudo chown $(id -u):$(id -g) $HOME/.kube/config
+      - run:
+          name: creating directory
+          command: |
+            mkdir /home/circleci/.aws
+            touch /home/circleci/.aws/config
+            chmod 600 /home/circleci/.aws/config
+            echo "[profile user]" > /home/circleci/.aws/config
+            echo "aws_access_key_id=$AWS_ACCESS_KEY_ID" >> /home/circleci/.aws/config
+            echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY" >> 
+            /home/circleci/.aws/config
       - run:
           name: Install awscli
           command: |
