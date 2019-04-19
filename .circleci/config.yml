@@ -64,6 +64,9 @@ jobs:
             echo 'export ECR_REPOSITORY_NAME="${AWS_RESOURCE_NAME_PREFIX}"' >> $BASH_ENV
             echo 'export ECS_CLUSTER_NAME="${AWS_RESOURCE_NAME_PREFIX}-cluster"' >> $BASH_ENV
             echo 'export ECS_SERVICE_NAME="${AWS_RESOURCE_NAME_PREFIX}-service"' >> $BASH_ENV
+            echo 'export FULL_IMAGE_NAME="${FULL_IMAGE_NAME}"'  >> $BASH_ENV
+            echo 'export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION}"'  >> $BASH_ENV
+             echo 'export AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID}"'  >> $BASH_ENV
       - run:
           name: Docker build and push
           command: |
@@ -71,9 +74,7 @@ jobs:
              docker build -t ${FULL_IMAGE_NAME} .
              . venv/bin/activate
              eval $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
-             echo AWS_ACCOUNT_ID
-             echo ECS_CLUSTER_NAME
-            docker tag ${FULL_IMAGE_NAME} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:${CIRCLE_SHA1}
+            docker tag $FULL_IMAGE_NAME $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPOSITORY_NAME:${CIRCLE_SHA1}
             # docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/agebold-api:$CIRCLE_SHA1
             #  docker tag samplenoderepo 157666243736.dkr.ecr.ap-south-1.amazonaws.com/samplenoderepo:latest
              docker push 157666243736.dkr.ecr.ap-south-1.amazonaws.com/samplenoderepo:latest
