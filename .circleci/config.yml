@@ -37,29 +37,12 @@ jobs:
       - run:
           name: Install kubectl from binary
           command: |
-            sudo curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add
-            sudo echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list 
-            sudo apt update
-            sudo apt install -y kubelet kubeadm kubectl kubernetes-cni 
-            # sudo apt-get install -qq -y gettext
-            # sudo curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.14.0/bin/linux/amd64/kubectl
-            # sudo chmod +x ./kubectl
-            # sudo mv ./kubectl /usr/local/bin/kubectl
-            # kubectl cluster-info
-            # kubectl version
-
-            # mkdir -p $HOME/.kube
-            # sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-            # sudo chown $(id -u):$(id -g) $HOME/.kube/config
-      # - run:
-      #     name: creating directory
-      #     command: |
-      #       mkdir /home/circleci/.aws
-      #       touch /home/circleci/.aws/config
-      #       chmod 600 /home/circleci/.aws/config
-      #       echo "[profile user]" > /home/circleci/.aws/config
-      #       echo "aws_access_key_id=$AWS_ACCESS_KEY_ID" >> /home/circleci/.aws/config
-      #       echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY" >> /home/circleci/.aws/config
+            sudo apt-get install -qq -y gettext
+            sudo curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.14.0/bin/linux/amd64/kubectl
+            sudo chmod +x ./kubectl
+            sudo mv ./kubectl /usr/local/bin/kubectl
+          # kubectl cluster-info
+          # kubectl version
       - run:
           name: Install awscli
           command: |
@@ -67,7 +50,6 @@ jobs:
             . venv/bin/activate
             pip install --upgrade pip
             pip install awscli
-
       - run:
           name: Setup aws environment variables
           command: |
@@ -88,7 +70,7 @@ jobs:
       - run:
           name: Deploy to Kubernetes
           command: |
-            # envsubst < ${HOME}/project/k8s.yml > ${HOME}/patched_k8s.yml
+            envsubst < ${HOME}/project/k8s.yml > ${HOME}/patched_k8s.yml
             kubectl apply -f k8s.yml
             kubectl rollout status deployment/${PROJECT_NAME}
 workflows:
