@@ -32,8 +32,8 @@ jobs:
           name: Install Kops
           command: |
             sudo curl -LO https://github.com/kubernetes/kops/releases/download/1.9.1/kops-linux-amd64
-            chmod +x kops-linux-amd64
-            mv ./kops-linux-amd64 /usr/local/bin/kops
+            sudo chmod +x kops-linux-amd64
+            sudo mv ./kops-linux-amd64 /usr/local/bin/kops
       - run:
           name: Install kubectl from binary
           command: |
@@ -51,15 +51,15 @@ jobs:
             # mkdir -p $HOME/.kube
             # sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
             # sudo chown $(id -u):$(id -g) $HOME/.kube/config
-      - run:
-          name: creating directory
-          command: |
-            mkdir /home/circleci/.aws
-            touch /home/circleci/.aws/config
-            chmod 600 /home/circleci/.aws/config
-            echo "[profile user]" > /home/circleci/.aws/config
-            echo "aws_access_key_id=$AWS_ACCESS_KEY_ID" >> /home/circleci/.aws/config
-            echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY" >> /home/circleci/.aws/config
+      # - run:
+      #     name: creating directory
+      #     command: |
+      #       mkdir /home/circleci/.aws
+      #       touch /home/circleci/.aws/config
+      #       chmod 600 /home/circleci/.aws/config
+      #       echo "[profile user]" > /home/circleci/.aws/config
+      #       echo "aws_access_key_id=$AWS_ACCESS_KEY_ID" >> /home/circleci/.aws/config
+      #       echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY" >> /home/circleci/.aws/config
       - run:
           name: Install awscli
           command: |
